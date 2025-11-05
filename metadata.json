@@ -1,0 +1,7 @@
+{
+  "name": "Gestión de Colonias Felinas",
+  "description": "Una aplicación para gestionar colonias de gatos en una población, realizar un seguimiento de los gatos individuales, su salud y estadísticas de la colonia. Incluye un panel de control con un mapa interactivo de las colonias.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
