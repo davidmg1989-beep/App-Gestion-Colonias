@@ -190,7 +190,7 @@ const catsData: Cat[] = [
     ...generateCats('colony-11', { females: 4, sterilizedFemales: 3, males: 10, castratedMales: 3, kittens: 0 }),
     ...generateCats('colony-12', { females: 4, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-13', { females: 3, sterilizedFemales: 0, males: 5, castratedMales: 0, kittens: 0 }),
-    ...generateCats('colony-14', { females: 5, sterilizedFemales: 6, males: 12, castratedMales: 6, kittens: 0 }), // Capped sterilizedFemales to 5
+    ...generateCats('colony-14', { females: 5, sterilizedFemales: 6, males: 12, castratedMales: 6, kittens: 0 }),
     ...generateCats('colony-15', { females: 17, sterilizedFemales: 0, males: 22, castratedMales: 0, kittens: 5 }),
     ...generateCats('colony-16', { females: 9, sterilizedFemales: 0, males: 5, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-17', { females: 4, sterilizedFemales: 0, males: 1, castratedMales: 0, kittens: 0 }),
@@ -201,14 +201,14 @@ const catsData: Cat[] = [
     ...generateCats('colony-22', { females: 2, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-23', { females: 2, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-24', { females: 2, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 0 }),
-    ...generateCats('colony-25', { females: 0, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 2 }),
-    ...generateCats('colony-26', { females: 0, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 0 }), // Totals mismatch in source, assuming 0
+    ...generateCats('colony-25', { females: 0, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 2 }), // Total is 2 in sheet
+    ...generateCats('colony-26', { females: 0, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 2 }), // Total is 2 in sheet, was 0
     ...generateCats('colony-27', { females: 2, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 0 }),
-    ...generateCats('colony-28', { females: 2, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 2 }), // Totals mismatch
+    ...generateCats('colony-28', { females: 2, sterilizedFemales: 0, males: 0, castratedMales: 0, kittens: 0 }), // Total is 2 in sheet
     ...generateCats('colony-29', { females: 2, sterilizedFemales: 0, males: 5, castratedMales: 0, kittens: 2 }),
     ...generateCats('colony-30', { females: 2, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-31', { females: 5, sterilizedFemales: 0, males: 7, castratedMales: 0, kittens: 0 }),
-    ...generateCats('colony-32', { females: 3, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 3 }), // Totals mismatch
+    ...generateCats('colony-32', { females: 3, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 0 }), // Total is 6 in sheet
     ...generateCats('colony-33', { females: 7, sterilizedFemales: 0, males: 11, castratedMales: 0, kittens: 4 }),
     ...generateCats('colony-34', { females: 3, sterilizedFemales: 0, males: 9, castratedMales: 0, kittens: 5 }),
     ...generateCats('colony-35', { females: 4, sterilizedFemales: 0, males: 7, castratedMales: 0, kittens: 4 }),
@@ -222,7 +222,7 @@ const catsData: Cat[] = [
     ...generateCats('colony-43', { females: 6, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-44', { females: 6, sterilizedFemales: 0, males: 3, castratedMales: 0, kittens: 6 }),
     ...generateCats('colony-45', { females: 5, sterilizedFemales: 4, males: 2, castratedMales: 1, kittens: 0 }),
-    ...generateCats('colony-46', { females: 1, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 2 }), // Totals mismatch
+    ...generateCats('colony-46', { females: 1, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 2 }), // Total is 6 in sheet
     ...generateCats('colony-47', { females: 3, sterilizedFemales: 0, males: 2, castratedMales: 0, kittens: 0 }),
     ...generateCats('colony-48', { females: 3, sterilizedFemales: 0, males: 4, castratedMales: 0, kittens: 3 }),
     ...generateCats('colony-49', { females: 5, sterilizedFemales: 0, males: 7, castratedMales: 0, kittens: 0 }),
