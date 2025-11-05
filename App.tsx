@@ -38,16 +38,9 @@ const App: React.FC = () => {
     
     const updateColony = (updatedColony: Colony) => {
         setColonies(prev => prev.map(c => c.id === updatedColony.id ? updatedColony : c));
+        setCurrentView({ type: 'colony', colonyId: updatedColony.id });
     };
     
-    const handleUpdateColonyLocations = (locations: { [key: string]: { lat: number, lng: number }}) => {
-         setColonies(prevColonies =>
-            prevColonies.map(colony =>
-                locations[colony.id] ? { ...colony, location: locations[colony.id] } : colony
-            )
-        );
-    };
-
     const addCat = (cat: Omit<Cat, 'id'>) => {
         const newCat: Cat = { ...cat, id: `cat-${Date.now()}` };
         setCats(prev => [...prev, newCat]);
@@ -69,7 +62,7 @@ const App: React.FC = () => {
     const renderView = () => {
         switch (currentView.type) {
             case 'dashboard':
-                return <Dashboard colonies={colonies} cats={cats} onSelectColony={handleSelectColony} onAddColony={addColony} onUpdateColonyLocations={handleUpdateColonyLocations} />;
+                return <Dashboard colonies={colonies} cats={cats} onSelectColony={handleSelectColony} onAddColony={addColony} />;
             case 'colony':
                 const selectedColony = colonies.find(c => c.id === currentView.colonyId);
                 const colonyCats = cats.filter(c => c.colonyId === currentView.colonyId);
@@ -87,7 +80,7 @@ const App: React.FC = () => {
                 const selectedCat = cats.find(c => c.id === currentView.catId);
                 return selectedCat ? <CatDetail cat={selectedCat} onBack={handleBack} onUpdateCat={updateCat} onAddVetVisit={addVetVisit} /> : null;
             default:
-                return <Dashboard colonies={colonies} cats={cats} onSelectColony={handleSelectColony} onAddColony={addColony} onUpdateColonyLocations={handleUpdateColonyLocations} />;
+                return <Dashboard colonies={colonies} cats={cats} onSelectColony={handleSelectColony} onAddColony={addColony} />;
         }
     };
     

@@ -1,8 +1,9 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { Colony, Cat } from '../types';
 import Modal from './Modal';
 import AddCatForm from './AddCatForm';
+import L from 'leaflet';
 
 interface ColonyDetailProps {
     colony: Colony;
@@ -25,10 +26,24 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
     </div>
 );
 
+// Configure Leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+
 const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, onAddCat, onUpdateColony }) => {
     const [isAddCatModalOpen, setAddCatModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedColony, setEditedColony] = useState<Colony>(colony);
+
+    const mapRef = useRef<HTMLDivElement>(null);
+    const [map, setMap] = useState<L.Map | null>(null);
+    const markerRef = useRef<L.Marker | null>(null);
+    
 
     const stats = useMemo(() => {
         const total = cats.length;
@@ -40,6 +55,57 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
         return { total, males, females, kittens, sterilized, chipped };
     }, [cats]);
 
+    useEffect(() => {
+        if (mapRef.current && !map) {
+            const initialCoords: L.LatLngExpression = [colony.location.lat, colony.location.lng];
+            const newMap = L.map(mapRef.current).setView(initialCoords, 16);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(newMap);
+            
+            setMap(newMap);
+
+            if (isEditing) {
+                newMap.on('click', (e: L.LeafletMouseEvent) => {
+                    const newLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
+                    setEditedColony(prev => ({...prev, location: newLocation}));
+                });
+            } else {
+                 newMap.dragging.disable();
+                 newMap.touchZoom.disable();
+                 newMap.doubleClickZoom.disable();
+                 newMap.scrollWheelZoom.disable();
+                 newMap.boxZoom.disable();
+                 newMap.keyboard.disable();
+                 // FIX: The 'tap' property does not exist on the Leaflet Map object in this version, causing a TypeScript error.
+                 // The other disabled interactions should be sufficient to make the map static.
+            }
+        }
+
+        // Cleanup map instance on component unmount
+        return () => {
+            if (map) {
+                map.remove();
+                setMap(null);
+            }
+        };
+
+    }, [isEditing]); // Reruns when edit mode changes to attach/detach click handler
+
+    useEffect(() => {
+        if(map) {
+             // Place or update marker
+            const location = editedColony.location;
+            if (markerRef.current) {
+                markerRef.current.setLatLng(location);
+            } else {
+                markerRef.current = L.marker(location).addTo(map);
+            }
+            map.setView(location);
+        }
+    }, [map, editedColony.location]);
+
     const handleAddCat = (catData: Omit<Cat, 'id'|'colonyId'>) => {
         onAddCat({ ...catData, colonyId: colony.id});
         setAddCatModalOpen(false);
@@ -49,6 +115,11 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
         onUpdateColony(editedColony);
         setIsEditing(false);
     };
+    
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditedColony(colony);
+    }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setEditedColony({ ...editedColony, [e.target.name]: e.target.value });
@@ -67,35 +138,61 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
     return (
         <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                <div className="flex justify-between items-start">
-                    {isEditing ? (
-                        <div className="flex-grow space-y-4">
+                <div className="flex justify-between items-start flex-wrap gap-4">
+                    <div className="flex-grow">
+                         {isEditing ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label htmlFor="name" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Nombre de la Colonia</label>
+                                    <input type="text" id="name" name="name" value={editedColony.name} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div>
+                                        <label htmlFor="feederName" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Nombre Alimentador</label>
+                                        <input type="text" id="feederName" name="feederName" value={editedColony.feederName || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                                     </div>
+                                      <div>
+                                        <label htmlFor="feederPhone" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Teléfono Alimentador</label>
+                                        <input type="text" id="feederPhone" name="feederPhone" value={editedColony.feederPhone || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                                     </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="description" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Descripción / Comentarios</label>
+                                    <textarea id="description" name="description" value={editedColony.description} onChange={handleInputChange} rows={3} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                                </div>
+                            </div>
+                        ) : (
                              <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Nombre de la Colonia</label>
-                                <input type="text" id="name" name="name" value={editedColony.name} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                             </div>
-                              <div>
-                                <label htmlFor="description" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Descripción / Comentarios</label>
-                                <textarea id="description" name="description" value={editedColony.description} onChange={handleInputChange} rows={4} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                             </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{colony.name}</h2>
-                            <p className="mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{colony.description}</p>
-                        </div>
-                    )}
-                    <div className="flex-shrink-0 ml-4">
+                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{colony.name}</h2>
+                                {colony.feederName && (
+                                    <div className="mt-4 flex items-center space-x-4">
+                                         <div className="flex-shrink-0"><FeederIcon className="h-6 w-6 text-gray-400"/></div>
+                                         <div>
+                                            <p className="font-semibold">{colony.feederName}</p>
+                                            {colony.feederPhone && <p className="text-sm text-gray-500">{colony.feederPhone}</p>}
+                                         </div>
+                                    </div>
+                                )}
+                                {colony.description && <p className="mt-4 text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{colony.description}</p>}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-shrink-0">
                         {isEditing ? (
                             <div className="flex space-x-2">
                                 <button onClick={handleSaveColony} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Guardar</button>
-                                <button onClick={() => { setIsEditing(false); setEditedColony(colony); }} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400">Cancelar</button>
+                                <button onClick={handleCancelEdit} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400">Cancelar</button>
                             </div>
                         ) : (
                             <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">Editar</button>
                         )}
                     </div>
                 </div>
+                 <div className="mt-6">
+                     <h3 className="text-lg font-semibold mb-2">Ubicación</h3>
+                     <div ref={mapRef} className={`w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-lg z-0 ${isEditing ? 'cursor-pointer' : ''}`} />
+                     {isEditing && <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">Haz clic en el mapa para cambiar la ubicación.</p>}
+                 </div>
             </div>
 
 
@@ -156,8 +253,7 @@ const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 const MaleIcon = (props: React.SVGProps<SVGSVGElement>) => (
    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9.75h7.5v7.5h-7.5v-7.5z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 1.5v2.25M12 1.5v2.25m2.25-2.25v2.25M3.75 9.75h2.25M3.75 12h2.25m-2.25 2.25h2.25M18 9.75h2.25M18 12h2.25m-2.25 2.25h2.25M9.75 22.5v-2.25M12 22.5v-2.25m2.25 2.25v-2.25M15.75 9.75V3.75a2.25 2.25 0 00-2.25-2.25h-3a2.25 2.25 0 00-2.25 2.25v6" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
    </svg>
 );
 const FemaleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -186,5 +282,11 @@ const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
   </svg>
 );
+const FeederIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+  </svg>
+);
+
 
 export default ColonyDetail;

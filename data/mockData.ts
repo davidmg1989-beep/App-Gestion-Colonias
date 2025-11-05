@@ -101,7 +101,7 @@ const generateCats = (
     return cats;
 };
 
-export const initialColonies: Colony[] = [
+const rawColonies: Omit<Colony, 'feederName'>[] = [
     { id: 'colony-1', name: 'Dama de Baza', location: { lat: 37.4901, lng: -2.7742 }, description: 'Alimentador: Ana' },
     { id: 'colony-2', name: 'Biblioteca', location: { lat: 37.4925, lng: -2.7761 }, description: 'Alimentador: Ana' },
     { id: 'colony-3', name: 'Cordobés', location: { lat: 37.4915, lng: -2.7733 }, description: 'Alimentador: Ana' },
@@ -160,6 +160,21 @@ export const initialColonies: Colony[] = [
     { id: 'colony-56', name: 'Callejón Molinos', location: { lat: 37.4863, lng: -2.7725 }, description: 'Se conoce que hay gatos por esa zona. No tiene alimentador registrado.' },
     { id: 'colony-57', name: 'Urbano', location: { lat: 37.4900, lng: -2.7700 }, description: 'Se conoce que hay gatos por esa zona. No tiene alimentador registrado.' }
 ];
+
+// Process raw data to extract feeder name
+export const initialColonies: Colony[] = rawColonies.map(colony => {
+    const feederKeyword = 'Alimentador:';
+    const feederIndex = colony.description.indexOf(feederKeyword);
+    
+    if (feederIndex !== -1) {
+        const feederName = colony.description.substring(feederIndex + feederKeyword.length).trim();
+        const description = colony.description.substring(0, feederIndex).trim();
+        return { ...colony, description, feederName };
+    }
+    
+    return { ...colony, feederName: undefined };
+});
+
 
 const catsData: Cat[] = [
     ...generateCats('colony-1', { females: 4, sterilizedFemales: 0, males: 6, castratedMales: 0, kittens: 0 }),

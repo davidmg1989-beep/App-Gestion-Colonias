@@ -35,12 +35,25 @@ const CatDetail: React.FC<CatDetailProps> = ({ cat, onUpdateCat, onAddVetVisit }
         onAddVetVisit(cat.id, visit);
         setAddVisitModalOpen(false);
     };
+    
+    const CatIconDisplay: React.FC = () => {
+        if (cat.age === 'Cachorro') {
+            return <KittenIcon className="w-full h-full text-yellow-500" />;
+        }
+        if (cat.gender === 'Macho') {
+            return <MaleIcon className="w-full h-full text-blue-500" />;
+        }
+        return <FemaleIcon className="w-full h-full text-pink-500" />;
+    }
+
 
     return (
         <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
             <div className="flex flex-col md:flex-row gap-8">
                 <div className="md:w-1/3 text-center">
-                    <img src={cat.photoUrl} alt={cat.name} className="w-full h-auto rounded-lg shadow-md aspect-square object-cover" />
+                    <div className="w-full rounded-lg shadow-md aspect-square bg-gray-200 dark:bg-gray-700 p-4">
+                       <CatIconDisplay />
+                    </div>
                     <h2 className="text-3xl font-bold mt-4 text-gray-900 dark:text-white">{cat.name}</h2>
                 </div>
                 <div className="md:w-2/3 space-y-4">
@@ -99,5 +112,24 @@ const CatDetail: React.FC<CatDetailProps> = ({ cat, onUpdateCat, onAddVetVisit }
         </div>
     );
 };
+
+// SVG Icons copied from ColonyDetail for consistency
+const MaleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+   </svg>
+);
+const FemaleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+     <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75a4.5 4.5 0 110-9 4.5 4.5 0 010 9z" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75v6.75m-3.375-3.375h6.75" />
+   </svg>
+);
+const KittenIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 
 export default CatDetail;

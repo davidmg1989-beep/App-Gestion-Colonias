@@ -6,6 +6,8 @@ export interface Colony {
         lng: number;
     };
     description: string;
+    feederName?: string;
+    feederPhone?: string;
 }
 
 export interface Cat {
