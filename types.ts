@@ -17,7 +17,7 @@ export interface Cat {
     isSterilized: boolean;
     isChipped: boolean;
     chipNumber?: string;
-    photoUrl: string;
+    photoUrl?: string;
     description: string;
     diseases: string[];
     vetVisits: VetVisit[];

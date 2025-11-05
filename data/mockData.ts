@@ -1,3 +1,4 @@
+
 import type { Colony, Cat } from '../types';
 
 // Helper function to generate cats for a colony
@@ -27,7 +28,6 @@ const generateCats = (
             age: 'Adulto',
             isSterilized: true,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${colonyId}-${catCounter}/300/300`,
             description: 'Gata adulta de la colonia.',
             diseases: [],
             vetVisits: [],
@@ -44,7 +44,6 @@ const generateCats = (
             age: 'Adulto',
             isSterilized: false,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${colonyId}-${catCounter}/300/300`,
             description: 'Gata adulta de la colonia.',
             diseases: [],
             vetVisits: [],
@@ -61,7 +60,6 @@ const generateCats = (
             age: 'Adulto',
             isSterilized: true,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${colonyId}-${catCounter}/300/300`,
             description: 'Gato adulto de la colonia.',
             diseases: [],
             vetVisits: [],
@@ -78,7 +76,6 @@ const generateCats = (
             age: 'Adulto',
             isSterilized: false,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${colonyId}-${catCounter}/300/300`,
             description: 'Gato adulto de la colonia.',
             diseases: [],
             vetVisits: [],
@@ -95,7 +92,6 @@ const generateCats = (
             age: 'Cachorro',
             isSterilized: false,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${colonyId}-${catCounter}/300/300`,
             description: 'Cachorro de la colonia.',
             diseases: [],
             vetVisits: [],

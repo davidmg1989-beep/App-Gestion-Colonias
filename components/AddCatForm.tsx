@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Cat } from '../types';
 
@@ -22,7 +23,6 @@ const AddCatForm: React.FC<AddCatFormProps> = ({ onSubmit, onCancel }) => {
             description,
             isSterilized: false,
             isChipped: false,
-            photoUrl: `https://picsum.photos/seed/${name.toLowerCase()}/300/300`,
             diseases: [],
             vetVisits: [],
         });

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import type { Colony, Cat } from '../types';
 import Modal from './Modal';
@@ -9,6 +10,7 @@ interface ColonyDetailProps {
     onSelectCat: (catId: string) => void;
     onBack: () => void;
     onAddCat: (cat: Omit<Cat, 'id'>) => void;
+    onUpdateColony: (colony: Colony) => void;
 }
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode }> = ({ title, value, icon }) => (
@@ -23,8 +25,10 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
     </div>
 );
 
-const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, onAddCat }) => {
+const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, onAddCat, onUpdateColony }) => {
     const [isAddCatModalOpen, setAddCatModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedColony, setEditedColony] = useState<Colony>(colony);
 
     const stats = useMemo(() => {
         const total = cats.length;
@@ -41,12 +45,59 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
         setAddCatModalOpen(false);
     };
 
+    const handleSaveColony = () => {
+        onUpdateColony(editedColony);
+        setIsEditing(false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setEditedColony({ ...editedColony, [e.target.name]: e.target.value });
+    };
+
+    const CatIcon: React.FC<{cat: Cat}> = ({cat}) => {
+        if (cat.age === 'Cachorro') {
+            return <KittenIcon className="h-16 w-16 text-yellow-500" />;
+        }
+        if (cat.gender === 'Macho') {
+            return <MaleIcon className="h-16 w-16 text-blue-500" />;
+        }
+        return <FemaleIcon className="h-16 w-16 text-pink-500" />;
+    }
+
     return (
         <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{colony.name}</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-300">{colony.description}</p>
+                <div className="flex justify-between items-start">
+                    {isEditing ? (
+                        <div className="flex-grow space-y-4">
+                             <div>
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Nombre de la Colonia</label>
+                                <input type="text" id="name" name="name" value={editedColony.name} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                             </div>
+                              <div>
+                                <label htmlFor="description" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Descripción / Comentarios</label>
+                                <textarea id="description" name="description" value={editedColony.description} onChange={handleInputChange} rows={4} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                             </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{colony.name}</h2>
+                            <p className="mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{colony.description}</p>
+                        </div>
+                    )}
+                    <div className="flex-shrink-0 ml-4">
+                        {isEditing ? (
+                            <div className="flex space-x-2">
+                                <button onClick={handleSaveColony} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Guardar</button>
+                                <button onClick={() => { setIsEditing(false); setEditedColony(colony); }} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400">Cancelar</button>
+                            </div>
+                        ) : (
+                            <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">Editar</button>
+                        )}
+                    </div>
+                </div>
             </div>
+
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <StatCard title="Total Gatos" value={stats.total} icon={<UsersIcon className="h-6 w-6 text-indigo-500" />} />
@@ -62,20 +113,24 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Gatos de la Colonia</h3>
                     <button
                         onClick={() => setAddCatModalOpen(true)}
-                        className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300"
+                        className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition duration-300"
                     >
                         <PlusIcon className="h-5 w-5 mr-2" />
                         Añadir Gato
                     </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {cats.map(cat => (
-                        <div key={cat.id} onClick={() => onSelectCat(cat.id)} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer group">
-                            <img src={cat.photoUrl} alt={cat.name} className="w-full h-48 object-cover" />
-                            <div className="p-4">
-                                <h4 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-500">{cat.name}</h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{cat.gender}, {cat.age}</p>
-                                <div className="flex space-x-2 mt-2">
+                        <div key={cat.id} onClick={() => onSelectCat(cat.id)} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer group flex flex-col">
+                            <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <CatIcon cat={cat} />
+                            </div>
+                            <div className="p-4 flex-grow flex flex-col justify-between">
+                                <div>
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-500 truncate">{cat.name}</h4>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{cat.gender}, {cat.age}</p>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-2">
                                     {cat.isSterilized && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Esterilizado</span>}
                                     {cat.isChipped && <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full dark:bg-purple-900 dark:text-purple-200">Con Chip</span>}
                                 </div>
@@ -101,8 +156,8 @@ const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 const MaleIcon = (props: React.SVGProps<SVGSVGElement>) => (
    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 7.5 20.25 3.75m0 0h-3.75m3.75 0v3.75" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9.75h7.5v7.5h-7.5v-7.5z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 1.5v2.25M12 1.5v2.25m2.25-2.25v2.25M3.75 9.75h2.25M3.75 12h2.25m-2.25 2.25h2.25M18 9.75h2.25M18 12h2.25m-2.25 2.25h2.25M9.75 22.5v-2.25M12 22.5v-2.25m2.25 2.25v-2.25M15.75 9.75V3.75a2.25 2.25 0 00-2.25-2.25h-3a2.25 2.25 0 00-2.25 2.25v6" />
    </svg>
 );
 const FemaleIcon = (props: React.SVGProps<SVGSVGElement>) => (

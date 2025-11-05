@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { Colony, Cat } from '../types';
 import Modal from './Modal';
 import AddColonyForm from './AddColonyForm';
@@ -9,6 +10,7 @@ interface DashboardProps {
     cats: Cat[];
     onSelectColony: (colonyId: string) => void;
     onAddColony: (colony: Omit<Colony, 'id'>) => void;
+    onUpdateColonyLocations: (locations: { [key: string]: { lat: number, lng: number }}) => void;
 }
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode }> = ({ title, value, icon }) => (
@@ -24,11 +26,14 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 );
 
 
-const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, onAddColony }) => {
+const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, onAddColony, onUpdateColonyLocations }) => {
     const [isAddColonyModalOpen, setAddColonyModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [updatedLocations, setUpdatedLocations] = useState<{ [key: string]: { lat: number, lng: number } }>({});
+    
     const mapRef = useRef<HTMLDivElement>(null);
     const [map, setMap] = useState<L.Map | null>(null);
-    const markersRef = useRef<L.CircleMarker[]>([]);
+    const markersRef = useRef<{ [id: string]: L.Marker }>({});
 
     const {
         totalColonies,
@@ -48,72 +53,107 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
         return { totalColonies, totalCats, sterilizedPercentage, chippedPercentage };
     }, [colonies, cats]);
 
-    const getCatCountForColony = (colonyId: string) => {
+    const getCatCountForColony = useCallback((colonyId: string) => {
         return cats.filter(cat => cat.colonyId === colonyId).length;
-    };
+    }, [cats]);
 
     const handleAddColony = (colonyData: Omit<Colony, 'id'>) => {
         onAddColony(colonyData);
         setAddColonyModalOpen(false);
     }
+    
+    const handleSaveLocations = () => {
+        onUpdateColonyLocations(updatedLocations);
+        setIsEditMode(false);
+        setUpdatedLocations({});
+    };
+    
+    const handleCancelEdit = () => {
+        setIsEditMode(false);
+        setUpdatedLocations({});
+        // Re-render markers to their original positions
+        Object.values(markersRef.current).forEach(marker => marker.remove());
+        markersRef.current = {};
+        // The useEffect will handle re-creating them
+    };
 
-    // Inicializar el mapa con Leaflet
+    // Initialize map
     useEffect(() => {
         if (mapRef.current && !map) {
             const bazaCoords: L.LatLngExpression = [37.4916, -2.7725];
             const newMap = L.map(mapRef.current!).setView(bazaCoords, 15);
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(newMap);
-
             setMap(newMap);
         }
     }, [mapRef, map]);
 
-    // Actualizar marcadores cuando cambien las colonias o el mapa
+    // Update markers
     useEffect(() => {
         if (map) {
-            // Limpiar marcadores anteriores
-            markersRef.current.forEach(marker => marker.remove());
-            markersRef.current = [];
-
+            Object.values(markersRef.current).forEach(marker => marker.remove());
+            markersRef.current = {};
+            
             colonies.forEach(colony => {
                 const catCount = getCatCountForColony(colony.id);
-                const radius = 10 + catCount * 1.5;
+                const size = 30 + Math.min(catCount * 2, 30);
+                
+                const location = updatedLocations[colony.id] || colony.location;
 
-                const marker = L.circleMarker(colony.location, {
-                    radius: radius,
-                    fillColor: "#4f46e5",
-                    color: "white",
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
+                const icon = L.divIcon({
+                    html: `<div class="flex items-center justify-center w-full h-full bg-indigo-600 text-white rounded-full border-2 border-white shadow-lg text-sm font-bold">${catCount}</div>`,
+                    className: '',
+                    iconSize: [size, size],
+                    iconAnchor: [size / 2, size / 2],
+                });
+
+                const marker = L.marker(location, {
+                    icon,
+                    draggable: isEditMode,
                 }).addTo(map);
 
                 marker.bindTooltip(`${colony.name}<br><b>${catCount}</b> ${catCount === 1 ? 'gato' : 'gatos'}`);
                 
-                marker.on('click', () => {
-                    onSelectColony(colony.id);
-                });
+                if (!isEditMode) {
+                    marker.on('click', () => onSelectColony(colony.id));
+                }
+
+                if (isEditMode) {
+                    marker.on('dragend', (e) => {
+                        const newLatLng = e.target.getLatLng();
+                        setUpdatedLocations(prev => ({
+                            ...prev,
+                            [colony.id]: { lat: newLatLng.lat, lng: newLatLng.lng }
+                        }));
+                    });
+                }
                 
-                markersRef.current.push(marker);
+                markersRef.current[colony.id] = marker;
             });
         }
-        
-    }, [map, colonies, cats, onSelectColony, getCatCountForColony]);
+    }, [map, colonies, getCatCountForColony, onSelectColony, isEditMode, updatedLocations]);
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-4">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Panel de Control</h2>
-                 <button
-                    onClick={() => setAddColonyModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300"
-                >
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Añadir Colonia
-                </button>
+                <div className="flex items-center space-x-2">
+                    {isEditMode ? (
+                        <>
+                            <button onClick={handleSaveLocations} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Guardar Cambios</button>
+                            <button onClick={handleCancelEdit} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400">Cancelar</button>
+                        </>
+                    ) : (
+                         <>
+                            <button onClick={() => setIsEditMode(true)} className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">Editar Ubicaciones</button>
+                            <button onClick={() => setAddColonyModalOpen(true)} className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">
+                                <PlusIcon className="h-5 w-5 mr-2" />
+                                Añadir Colonia
+                            </button>
+                         </>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -125,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
            
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Mapa de Colonias de Baza</h3>
-                 <div ref={mapRef} className="w-full h-[60vh] bg-gray-200 dark:bg-gray-700 rounded-lg z-0" />
+                 <div ref={mapRef} className={`w-full h-[60vh] bg-gray-200 dark:bg-gray-700 rounded-lg z-0 ${isEditMode ? 'cursor-move' : ''}`} />
             </div>
              <Modal isOpen={isAddColonyModalOpen} onClose={() => setAddColonyModalOpen(false)} title="Añadir Nueva Colonia">
                 <AddColonyForm onSubmit={handleAddColony} onCancel={() => setAddColonyModalOpen(false)} />
