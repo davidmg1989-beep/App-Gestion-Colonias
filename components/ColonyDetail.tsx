@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { Colony, Cat } from '../types';
 import Modal from './Modal';
 import AddCatForm from './AddCatForm';
+import LocationPickerModal from './LocationPickerModal';
 import L from 'leaflet';
 
 interface ColonyDetailProps {
@@ -39,11 +40,11 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
     const [isAddCatModalOpen, setAddCatModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedColony, setEditedColony] = useState<Colony>(colony);
+    const [isLocationModalOpen, setLocationModalOpen] = useState(false);
 
     const mapRef = useRef<HTMLDivElement>(null);
-    const [map, setMap] = useState<L.Map | null>(null);
+    const mapInstanceRef = useRef<L.Map | null>(null);
     const markerRef = useRef<L.Marker | null>(null);
-    
 
     const stats = useMemo(() => {
         const total = cats.length;
@@ -55,56 +56,49 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
         return { total, males, females, kittens, sterilized, chipped };
     }, [cats]);
 
+    // Effect for STATIC map initialization and updates
     useEffect(() => {
-        if (mapRef.current && !map) {
-            const initialCoords: L.LatLngExpression = [colony.location.lat, colony.location.lng];
-            const newMap = L.map(mapRef.current).setView(initialCoords, 16);
+        if (mapRef.current && !mapInstanceRef.current) {
+            const map = L.map(mapRef.current, {
+                zoomControl: false,
+                scrollWheelZoom: false,
+                dragging: false,
+                touchZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false,
+            }).setView(colony.location, 16);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(newMap);
+            }).addTo(map);
             
-            setMap(newMap);
-
-            if (isEditing) {
-                newMap.on('click', (e: L.LeafletMouseEvent) => {
-                    const newLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
-                    setEditedColony(prev => ({...prev, location: newLocation}));
-                });
-            } else {
-                 newMap.dragging.disable();
-                 newMap.touchZoom.disable();
-                 newMap.doubleClickZoom.disable();
-                 newMap.scrollWheelZoom.disable();
-                 newMap.boxZoom.disable();
-                 newMap.keyboard.disable();
-                 // FIX: The 'tap' property does not exist on the Leaflet Map object in this version, causing a TypeScript error.
-                 // The other disabled interactions should be sufficient to make the map static.
+            mapInstanceRef.current = map;
+            markerRef.current = L.marker(colony.location).addTo(map);
+        } else if (mapInstanceRef.current) {
+            mapInstanceRef.current.setView(colony.location, 16);
+            if(markerRef.current) {
+                markerRef.current.setLatLng(colony.location);
             }
         }
+    }, [colony.location]);
 
-        // Cleanup map instance on component unmount
+    // Cleanup on component unmount
+    useEffect(() => {
+        const map = mapInstanceRef.current;
         return () => {
             if (map) {
                 map.remove();
-                setMap(null);
+                mapInstanceRef.current = null;
             }
         };
+    }, []);
 
-    }, [isEditing]); // Reruns when edit mode changes to attach/detach click handler
-
+    // When the base colony prop changes, reset the edit state
     useEffect(() => {
-        if(map) {
-             // Place or update marker
-            const location = editedColony.location;
-            if (markerRef.current) {
-                markerRef.current.setLatLng(location);
-            } else {
-                markerRef.current = L.marker(location).addTo(map);
-            }
-            map.setView(location);
-        }
-    }, [map, editedColony.location]);
+        setEditedColony(colony);
+    }, [colony]);
+
 
     const handleAddCat = (catData: Omit<Cat, 'id'|'colonyId'>) => {
         onAddCat({ ...catData, colonyId: colony.id});
@@ -123,6 +117,11 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setEditedColony({ ...editedColony, [e.target.name]: e.target.value });
+    };
+
+    const handleLocationSave = (newLocation: { lat: number; lng: number }) => {
+        setEditedColony(prev => ({ ...prev, location: newLocation }));
+        setLocationModalOpen(false);
     };
 
     const CatIcon: React.FC<{cat: Cat}> = ({cat}) => {
@@ -155,6 +154,15 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
                                         <label htmlFor="feederPhone" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Teléfono Alimentador</label>
                                         <input type="text" id="feederPhone" name="feederPhone" value={editedColony.feederPhone || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
                                      </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Ubicación</label>
+                                    <div className="flex items-center gap-4 mt-1">
+                                        <p className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 flex-grow">
+                                            {`Lat: ${editedColony.location.lat.toFixed(5)}, Lng: ${editedColony.location.lng.toFixed(5)}`}
+                                        </p>
+                                        <button onClick={() => setLocationModalOpen(true)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Cambiar</button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label htmlFor="description" className="block text-sm font-medium text-gray-500 dark:text-gray-400">Descripción / Comentarios</label>
@@ -190,8 +198,7 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
                 </div>
                  <div className="mt-6">
                      <h3 className="text-lg font-semibold mb-2">Ubicación</h3>
-                     <div ref={mapRef} className={`w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-lg z-0 ${isEditing ? 'cursor-pointer' : ''}`} />
-                     {isEditing && <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">Haz clic en el mapa para cambiar la ubicación.</p>}
+                     <div ref={mapRef} className="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-lg z-0" />
                  </div>
             </div>
 
@@ -241,6 +248,12 @@ const ColonyDetail: React.FC<ColonyDetailProps> = ({ colony, cats, onSelectCat, 
             <Modal isOpen={isAddCatModalOpen} onClose={() => setAddCatModalOpen(false)} title="Añadir Nuevo Gato">
                 <AddCatForm onSubmit={handleAddCat} onCancel={() => setAddCatModalOpen(false)} />
             </Modal>
+             <LocationPickerModal 
+                isOpen={isLocationModalOpen}
+                onClose={() => setLocationModalOpen(false)}
+                initialLocation={editedColony.location}
+                onLocationSave={handleLocationSave}
+            />
         </div>
     );
 };
