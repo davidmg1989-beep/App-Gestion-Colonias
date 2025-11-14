@@ -28,8 +28,8 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, onAddColony }) => {
     const [isAddColonyModalOpen, setAddColonyModalOpen] = useState(false);
     
-    const mapRef = useRef<HTMLDivElement>(null);
-    const [map, setMap] = useState<L.Map | null>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<L.Map | null>(null);
     const markersRef = useRef<{ [id: string]: L.Marker }>({});
 
     const {
@@ -61,18 +61,32 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
     
     // Initialize map
     useEffect(() => {
-        if (mapRef.current && !map) {
+        if (mapContainerRef.current && !mapInstanceRef.current) {
             const bazaCoords: L.LatLngExpression = [37.4916, -2.7725];
-            const newMap = L.map(mapRef.current!).setView(bazaCoords, 15);
+            mapInstanceRef.current = L.map(mapContainerRef.current).setView(bazaCoords, 15);
+            
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(newMap);
-            setMap(newMap);
+            }).addTo(mapInstanceRef.current);
+
+            // Invalidate size after a short delay to ensure the container is sized correctly
+            setTimeout(() => {
+                mapInstanceRef.current?.invalidateSize();
+            }, 100);
         }
-    }, [mapRef, map]);
+
+        // Cleanup function to run when the component is unmounted
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []);
 
     // Update markers
     useEffect(() => {
+        const map = mapInstanceRef.current;
         if (map) {
             Object.values(markersRef.current).forEach(marker => marker.remove());
             markersRef.current = {};
@@ -98,7 +112,7 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
                 markersRef.current[colony.id] = marker;
             });
         }
-    }, [map, colonies, getCatCountForColony, onSelectColony]);
+    }, [colonies, getCatCountForColony, onSelectColony]);
 
     return (
         <div className="space-y-6">
@@ -119,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
            
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Mapa de Colonias de Baza</h3>
-                 <div ref={mapRef} className="w-full h-[60vh] bg-gray-200 dark:bg-gray-700 rounded-lg z-0" />
+                 <div ref={mapContainerRef} className="w-full h-[60vh] bg-gray-200 dark:bg-gray-700 rounded-lg z-0" />
             </div>
              <Modal isOpen={isAddColonyModalOpen} onClose={() => setAddColonyModalOpen(false)} title="Añadir Nueva Colonia">
                 <AddColonyForm onSubmit={handleAddColony} onCancel={() => setAddColonyModalOpen(false)} />
