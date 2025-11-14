@@ -94,6 +94,60 @@ Resumen final y próximos pasos que puedo hacer ahora
 - Puedo reemplazar el sistema mock de auth por integración con un proveedor real si quieres.
 
 Si quieres, aplico ahora alguno de los siguientes: construir la imagen Docker localmente, extender CI con lint/tests, o integrar una solución de autenticación.
+
+Backlog / Tareas futuras (para plantear más adelante)
+
+Estas son las mejoras y tareas que hemos discutido y que conviene planificar para próximas iteraciones. Las incluyo aquí para facilitar priorización y seguimiento.
+
+- Verificación local de Docker:
+   - Construir y ejecutar la imagen localmente para validar el runtime y la configuración de `nginx`.
+   - Comandos sugeridos:
+      ```bash
+      docker build -t app-gestion-colonias .
+      docker run --rm -p 8080:80 app-gestion-colonias
+      # Abrir http://localhost:8080
+      ```
+
+- Publicar imagen en un registry (GHCR/DockerHub):
+   - Añadir un workflow de GitHub Actions para construir y publicar la imagen al GitHub Container Registry o DockerHub.
+   - Permite desplegar desde Coolify sin construir desde el repo.
+
+- Extender CI (lint, tests y cobertura):
+   - Añadir step de `npm run lint` en CI y configurar tests unitarios adicionales.
+   - Integrar reportes de coverage y fallos antes de permitir merge a `main`.
+
+- E2E / integración (Playwright / Cypress):
+   - Crear pruebas E2E que validen flujos críticos (login, crear colonia/gato, editar cat, ver mapa).
+
+- Autenticación real y permisos:
+   - Reemplazar el auth mock por JWT/OAuth o delegar a un proveedor.
+   - Definir roles/permiso en la UI si habrá usuarios con distintos niveles.
+
+- Persistencia / API Backend:
+   - Diseñar endpoints para sincronizar colonias, gatos y visitas (GET/POST/PUT/DELETE).
+   - Decidir quién genera ids: cliente (UUID) o servidor; definir estrategia de reconciliación.
+
+- Migración de IDs y datos existentes:
+   - Plan para normalizar ids (si es necesario) y migrar los datos de `initialCats` a un formato con UUID consistente.
+
+- Mejorar marcadores de mapa:
+   - Pasar de iconos HTML simples a SVG programáticos o elementos DOM con handlers (mejor accesibilidad y control).
+   - Añadir pruebas visuales y comprobaciones de contraste / accesibilidad.
+
+- Revisión de Tailwind: safelist vs enfoque DOM
+   - Podemos seguir con `safelist` (ya añadido) o mover estilos dinámicos a CSS inline/SVG/DOM programático para no depender de purge.
+
+- Healthchecks, métricas y monitorización:
+   - Añadir `HEALTHCHECK` al Dockerfile o endpoint HTTP para comprobar disponibilidad.
+   - Configurar alertas en el entorno de despliegue (Coolify / external monitoring).
+
+- Seguridad y secretos:
+   - No commitear secretos. Documentar cómo setear `GEMINI_API_KEY` y otros secrets en Coolify o en Actions Secrets.
+
+- Rollback / estrategia de despliegue:
+   - Definir política de despliegue: canary/blue-green o despliegue inmediato.
+
+Cada uno de estos puntos puede ser convertido en una tarea/issue y priorizado. Si quieres, puedo crear issues en GitHub para cada ítem y proponer estimaciones o hacer alguno automáticamente (por ejemplo publicar la imagen en GHCR con un workflow). 
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
