@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# SQLite database file(s) and temp files
+/data/colonias.db
+/data/colonias.db-shm
+/data/colonias.db-wal
+/data/*.db
+
+# Backups
+/backups/
