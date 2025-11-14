@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import Dashboard from './components/Dashboard';
 
@@ -83,7 +84,7 @@ const App: React.FC = () => {
 
     const addColony = (colony: Omit<Colony, 'id'>) => {
 
-        const newColony: Colony = { ...colony, id: `colony-${Date.now()}` };
+    const newColony: Colony = { ...colony, id: `colony-${uuidv4()}` };
 
         setColonies(prev => [...prev, newColony]);
 
@@ -103,7 +104,7 @@ const App: React.FC = () => {
 
     const addCat = (cat: Omit<Cat, 'id'>) => {
 
-        const newCat: Cat = { ...cat, id: `cat-${Date.now()}` };
+    const newCat: Cat = { ...cat, id: `cat-${uuidv4()}` };
 
         setCats(prev => [...prev, newCat]);
 
@@ -121,7 +122,7 @@ const App: React.FC = () => {
 
     const addVetVisit = (catId: string, visit: Omit<VetVisit, 'id'>) => {
 
-        const newVisit: VetVisit = { ...visit, id: `visit-${Date.now()}` };
+    const newVisit: VetVisit = { ...visit, id: `visit-${uuidv4()}` };
 
         const updatedCat = cats.find(c => c.id === catId);
 

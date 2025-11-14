@@ -95,10 +95,27 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
                 const catCount = getCatCountForColony(colony.id);
                 const size = 30 + Math.min(catCount * 2, 30);
 
-                // Create a marker icon using inline styles to avoid relying on Tailwind classes
-                const iconHtml = `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#4f46e5;color:#ffffff;border-radius:9999px;border:2px solid #ffffff;box-shadow:0 6px 12px rgba(0,0,0,0.12);font-weight:700;font-size:12px;">${catCount}</div>`;
+                // Create the marker DOM element programmatically for better control and accessibility
+                // (avoid relying on static HTML strings; create element, style it and then use its outerHTML)
+                const el = document.createElement('div');
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', `${catCount} gatos en ${colony.name}`);
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.justifyContent = 'center';
+                el.style.width = `${size}px`;
+                el.style.height = `${size}px`;
+                el.style.background = '#4f46e5'; // indigo-600
+                el.style.color = '#ffffff';
+                el.style.borderRadius = '9999px';
+                el.style.border = '2px solid #ffffff';
+                el.style.boxShadow = '0 6px 12px rgba(0,0,0,0.12)';
+                el.style.fontWeight = '700';
+                el.style.fontSize = '12px';
+                el.textContent = String(catCount);
+
                 const icon = L.divIcon({
-                    html: iconHtml,
+                    html: el.outerHTML,
                     className: '',
                     iconSize: [size, size],
                     iconAnchor: [size / 2, size / 2],
