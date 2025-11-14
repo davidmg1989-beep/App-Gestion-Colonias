@@ -53,19 +53,31 @@ const App: React.FC = () => {
 
 
 
-    const handleBack = useCallback(() => {
+        const handleBack = useCallback(() => {
 
-        if (currentView.type === 'cat' && currentView.colonyId) {
 
-            setCurrentView({ type: 'colony', colonyId: currentView.colonyId });
 
-        } else {
+            if (currentView.type === 'cat') {
 
-            setCurrentView({ type: 'dashboard' });
 
-        }
 
-    }, [currentView]);
+                setCurrentView({ type: 'colony', colonyId: currentView.colonyId });
+
+
+
+            } else {
+
+
+
+                setCurrentView({ type: 'dashboard' });
+
+
+
+            }
+
+
+
+        }, [currentView]);
 
 
 
