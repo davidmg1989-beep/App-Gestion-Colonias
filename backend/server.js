@@ -8,6 +8,26 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: '5mb' }));
 
+// Minimal admin token protection for write endpoints.
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'changeme';
+if (ADMIN_TOKEN === 'changeme') {
+  console.warn('WARNING: backend running with default ADMIN_TOKEN. Set ADMIN_TOKEN env var to secure write endpoints.');
+}
+
+function requireAdminToken(req, res, next) {
+  // Protect mutating methods
+  if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    const headerToken = req.headers['x-admin-token'] || req.headers['authorization'];
+    if (!headerToken) return res.status(401).json({ error: 'Missing admin token' });
+    const raw = Array.isArray(headerToken) ? headerToken[0] : headerToken;
+    const token = String(raw).replace(/^Bearer\s+/i, '');
+    if (token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Invalid admin token' });
+  }
+  next();
+}
+
+app.use(requireAdminToken);
+
 // Helpers
 function now() {
   return new Date().toISOString();
