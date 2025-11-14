@@ -4,11 +4,12 @@ import { useAuth } from './AuthContext';
 
 const Login: React.FC = () => {
   const [password, setPassword] = useState('');
+  const [adminTokenInput, setAdminTokenInput] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
 
   const handleLogin = () => {
-    if (!login(password)) {
+    if (!login(password, adminTokenInput || undefined)) {
       setError('Invalid password');
     }
   };
@@ -30,6 +31,18 @@ const Login: React.FC = () => {
               className="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-200 dark:bg-gray-700 dark:text-white border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Admin token (opcional)
+              </label>
+              <input
+                type="text"
+                value={adminTokenInput}
+                onChange={(e) => setAdminTokenInput(e.target.value)}
+                placeholder="Introduce admin token para operaciones"
+                className="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-200 dark:bg-gray-700 dark:text-white border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
         </div>
         <button
           onClick={handleLogin}
