@@ -153,18 +153,120 @@ Cada uno de estos puntos puede ser convertido en una tarea/issue y priorizado. S
 </div>
 
 # Run and deploy your AI Studio app
+# Gestión de Colonias Felinas
 
-This contains everything you need to run your app locally.
+Este repositorio es una SPA en React + TypeScript (Vite) para gestionar colonias felinas. Está diseñada para ser lo más sencilla posible y, al mismo tiempo, ofrecer persistencia fiable mediante un backend mínimo en Node/Express con SQLite.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1QzwqGLa3lW1YMLYK09HEzPZlU7LHCZkq
+## Resumen rápido
+- Frontend: React + TypeScript + Vite; Leaflet para mapa; Tailwind CSS.
+- Backend: Node + Express + SQLite (archivo `./data/colonias.db`) para persistencia mínima y fiable.
+- Deployment target: Coolify (recomendado para facilidad) o cualquier host Docker-compatible.
 
-## Run Locally
+## Contenido del repo (archivos importantes)
+- `App.tsx`, `components/` — frontend, lógica UI y formularios.
+- `data/mockData.ts` — datos iniciales y utilidades de generación (`generateCats`).
+- `backend/server.js`, `backend/db.js` — servidor Express y inicializador SQLite.
+- `Dockerfile` (root) — multi-stage para build frontend y servir `dist/` con nginx.
+- `backend/Dockerfile` — Dockerfile para backend (Node).
+- `docker-compose.override.yml` — en desarrollo monta `./data` como volumen para persistencia.
+- `scripts/backup.sh` — script para dump y rotación de backups del archivo SQLite.
+- `.github/workflows/ci.yml` — CI que ejecuta tests y build.
 
-**Prerequisites:**  Node.js
+## Estado actual (válido para producción si se configura correctamente)
+- La app compila (`npm run build`).
+- Tests unitarios mínimos con Vitest añadidos.
+- Backend funcional con endpoints CRUD básicos y `/api/seed` para poblar datos de ejemplo.
 
+## Requisitos / variables de entorno
+En producción (Coolify) debes configurar las siguientes variables de entorno:
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- `NODE_ENV=production` — para el backend si lo despliegas con Node.
+- `PORT` — puerto del backend (por defecto `4000`).
+- `ADMIN_TOKEN` — token secreto para proteger endpoints de escritura del backend (imprescindible). Usa un valor largo y seguro, p. ej. 32+ caracteres aleatorios.
+- `GEMINI_API_KEY` — si usas integraciones de IA (opcional), inyectada en tiempo de build para el frontend si procede.
+
+### Buenas prácticas de seguridad
+- No commitear secretos. Define `ADMIN_TOKEN` en Coolify (Settings > Environment Variables) o en el panel del servicio.
+- Usar HTTPS/TLS en producción. Coolify puede gestionar certificados automáticamente.
+- Rotar `ADMIN_TOKEN` si se sospecha exposición.
+
+## Despliegue en Coolify (paso a paso recomendado)
+1) Preparar repo
+   - Push del repo a GitHub (asegúrate de que todos los commits estén en `main`).
+
+2) Crear dos servicios en Coolify (lo simple):
+   - Frontend: tipo static/site. Configura build command y serve `dist/` con nginx o usa nuestro `Dockerfile` en la raíz.
+   - Backend: servicio Node.js. Usa `backend/Dockerfile` o ejecuta `node server.js` en el contenedor.
+
+3) Configurar volúmenes para persistencia
+   - Monta un volumen en el backend apuntando a la carpeta `/app/data` del contenedor (o la ruta que use el servidor) para que `colonias.db` quede fuera del contenedor y sobreviva reinicios.
+   - Si usas Docker Compose en producción, el `docker-compose.override.yml` ya plantea montar `./data` localmente en desarrollo.
+
+4) Variables de entorno en Coolify
+   - Backend: `ADMIN_TOKEN` (valor fuerte), `PORT` (4000), `NODE_ENV=production`.
+   - Frontend: si necesitas `GEMINI_API_KEY` o similares en build-time, defínelas como build-time env vars.
+
+5) Healthchecks y dominio
+   - Backend healthcheck: `GET http://<backend-host>:<port>/health` debe devolver 200.
+   - Frontend: configurar dominio y TLS desde Coolify.
+
+6) Backups
+   - Asegura un job/cron que haga dump periódico de `colonias.db` (recomendado: cada 6–24h). Usa `scripts/backup.sh` como base.
+   - Copia backups a almacenamiento durable (S3, servidor de backup) o al host con retención y rotación.
+
+7) Acceso y protección
+   - El backend valida `ADMIN_TOKEN` en cabeceras `x-admin-token` o `Authorization: Bearer <token>` para POST/PUT/DELETE.
+   - El frontend incluye un campo opcional para introducir `adminToken` en el login; se guarda en `localStorage` y se añade automáticamente a las peticiones mutantes mediante `utils/api.ts`.
+
+## Comandos útiles (local)
+```bash
+# Instala deps
+npm ci
+
+# Backend (desarrollo)
+cd backend
+npm install
+node server.js
+
+# Frontend (desarrollo)
+npm run dev
+
+# Build producción
+npm run build
+
+# Build imagen Docker (root)
+docker build -t app-gestion-colonias .
+
+# Ejecutar imagen (puerto 8080 en host -> 80 en contenedor)
+docker run --rm -p 8080:80 app-gestion-colonias
+# Abrir http://localhost:8080
+```
+
+## CI / Tests
+- El workflow de GitHub Actions ejecuta `npm ci`, `npm run test` (Vitest) y `npm run build` en pushes y PRs.
+- Recomendado: ampliar CI con `npm run lint`, `npm run typecheck` y un job de smoke test que despliegue en un entorno de staging y verifique `/health` y endpoints básicos.
+
+## Publicar imágenes (opcional)
+- Añadir un workflow para publicar imágenes al GitHub Container Registry (GHCR) o DockerHub. Esto permite desplegar el contenedor en Coolify desde el registry en vez de construir en Coolify.
+
+## Checklist antes de producción (qué falta o debes confirmar)
+1. ADMIN_TOKEN configurado en Coolify (imprescindible).
+2. Volumen persistente montado en backend para `./data/colonias.db`.
+3. Backups automáticos y política de retención en funcionamiento (scripts/backup.sh y cron/job).
+4. HTTPS/TLS configurado para el dominio.
+5. CI que ejecute tests/lint y bloquee merges con fallos.
+6. (Opcional) Flow de migración/import para datos existentes (si quieres pasar mockData a la DB): usar `/api/seed` o escribir script de import.
+
+## Qué más puedo hacer por ti (priorizado)
+- Integrar el frontend para usar la API (convertir mutaciones locales en llamadas `apiFetch`) y dejar la app en modo persistente por defecto.
+- Añadir un job de backup (ej. `cron`) y documentar pasos para restauración.
+- Añadir workflow para publicar imágenes en GHCR y/o desplegar automáticamente en Coolify.
+- Reforzar auth: migrar `ADMIN_TOKEN` a JWT (si quieres multiusuario y auditoría).
+
+## Estado final y recomendaciones para el gestor
+- Con `ADMIN_TOKEN` y volumen para `./data`, el gestor podrá usar la app en producción sin perder datos aunque el contenedor se reinicie o se actualice.
+- Mantener copias de seguridad y una política de rotación es crítico: automatízalo desde el principio.
+
+Si quieres, hago ahora cualquiera de los pasos de la sección "Qué más puedo hacer por ti" y lo commiteo. También puedo preparar un checklist final con los comandos exactos para configurar Coolify paso a paso.
+
+_Última actualización: 2025-11-14_
