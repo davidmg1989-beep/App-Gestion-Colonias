@@ -2,7 +2,7 @@
 import type { Colony, Cat } from '../types';
 
 // Helper function to generate cats for a colony
-const generateCats = (
+export const generateCats = (
     colonyId: string,
     counts: {
         females: number;
