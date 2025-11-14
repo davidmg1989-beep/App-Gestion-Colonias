@@ -95,8 +95,10 @@ const Dashboard: React.FC<DashboardProps> = ({ colonies, cats, onSelectColony, o
                 const catCount = getCatCountForColony(colony.id);
                 const size = 30 + Math.min(catCount * 2, 30);
 
+                // Create a marker icon using inline styles to avoid relying on Tailwind classes
+                const iconHtml = `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:#4f46e5;color:#ffffff;border-radius:9999px;border:2px solid #ffffff;box-shadow:0 6px 12px rgba(0,0,0,0.12);font-weight:700;font-size:12px;">${catCount}</div>`;
                 const icon = L.divIcon({
-                    html: `<div class="flex items-center justify-center w-full h-full bg-indigo-600 text-white rounded-full border-2 border-white shadow-lg text-sm font-bold">${catCount}</div>`,
+                    html: iconHtml,
                     className: '',
                     iconSize: [size, size],
                     iconAnchor: [size / 2, size / 2],

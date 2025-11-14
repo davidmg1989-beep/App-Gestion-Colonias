@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Cat, VetVisit } from '../types';
 import Modal from './Modal';
 import AddVetVisitForm from './AddVetVisitForm';
@@ -14,6 +14,11 @@ interface CatDetailProps {
 const CatDetail: React.FC<CatDetailProps> = ({ cat, onUpdateCat, onAddVetVisit }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedCat, setEditedCat] = useState<Cat>(cat);
+
+    // Keep local editedCat in sync when the prop changes (e.g. selecting another cat)
+    useEffect(() => {
+        setEditedCat(cat);
+    }, [cat]);
     const [isAddVisitModalOpen, setAddVisitModalOpen] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
